@@ -1,4 +1,3 @@
-<app-header title="Title"></app-header>
 <main
     class="page-wrapper"
     fxLayout="column"
@@ -9,8 +8,10 @@
         class="example-card"
         *ngFor="let item of [].constructor(5); index as index"
         appObserveElement
-        [debounceTime]="500"
-        (visible)="onVisible(index)"
+        #intersection="intersection"
+        [class.example-card--is-intersecting]="intersection._isIntersecting"
+        (isIntersecting)="isIntersecting($event, index)"
+        [isContinuous]="true"
     >
         <mat-card-header>
             <div mat-card-avatar class="example-header-image"></div>

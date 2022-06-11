@@ -1,95 +1,66 @@
 import {
   Directive,
   OnDestroy,
-  OnInit,
-  AfterViewInit,
   Input,
   Output,
   EventEmitter,
   ElementRef,
 } from '@angular/core'
-import { Subject, delay, filter } from 'rxjs'
+import { debounceTime, Observable, Subscription } from 'rxjs'
 
 @Directive({
   selector: '[appObserveElement]',
+  exportAs: 'intersection',
 })
-export class ObserveElementDirective
-  implements OnDestroy, OnInit, AfterViewInit {
-  @Input() debounceTime = 0
-  @Input() threshold = 1
+export class ObserveElementDirective implements OnDestroy {
+  @Input() root: HTMLElement | null = null
+  @Input() rootMargin = '0px 0px 0px 0px'
+  @Input() threshold = 0
+  @Input() debounceTime = 500
+  @Input() isContinuous = false
 
-  @Output() visible = new EventEmitter<HTMLElement>()
+  @Output() isIntersecting = new EventEmitter<boolean>()
 
-  private observer: IntersectionObserver | undefined
-  private subject$ = new Subject<{
-    entry: IntersectionObserverEntry
-    observer: IntersectionObserver
-  }>()
+  _isIntersecting = false
+  subscription: Subscription
 
-  constructor (private element: ElementRef) {}
-
-  ngOnInit () {
-    this.createObserver()
-  }
-
-  ngAfterViewInit () {
-    this.startObservingElements()
+  constructor (private element: ElementRef) {
+    this.subscription = this.createAndObserve()
   }
 
   ngOnDestroy () {
-    if (this.observer) {
-      this.observer.disconnect()
-      this.observer = undefined
-    }
-    this.subject$.complete()
+    this.subscription.unsubscribe()
   }
 
-  private isVisible (element: HTMLElement) {
-    return new Promise(resolve => {
-      const observer = new IntersectionObserver(([entry]) => {
-        resolve(entry.intersectionRatio === 1)
-        observer.disconnect()
-      })
-
-      observer.observe(element)
-    })
-  }
-
-  private createObserver () {
-    const options = {
-      rootMargin: '0px',
+  createAndObserve () {
+    const options: IntersectionObserverInit = {
+      root: this.root,
+      rootMargin: this.rootMargin,
       threshold: this.threshold,
     }
 
-    const isIntersecting = (entry: IntersectionObserverEntry) =>
-      entry.isIntersecting || entry.intersectionRatio > 0
+    return new Observable<boolean>(subscriber => {
+      const intersectionObserver = new IntersectionObserver(entries => {
+        const { isIntersecting } = entries[0]
+        subscriber.next(isIntersecting)
 
-    this.observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (isIntersecting(entry)) {
-          this.subject$.next({ entry, observer })
-        }
-      })
-    }, options)
-  }
+        isIntersecting &&
+          !this.isContinuous &&
+          intersectionObserver.disconnect()
+      }, options)
 
-  private startObservingElements () {
-    if (!this.observer) {
-      return
-    }
+      intersectionObserver.observe(this.element.nativeElement)
 
-    this.observer.observe(this.element.nativeElement)
-
-    this.subject$
-      .pipe(delay(this.debounceTime), filter(Boolean))
-      .subscribe(async ({ entry, observer }) => {
-        const target = entry.target as HTMLElement
-        const isStillVisible = await this.isVisible(target)
-
-        if (isStillVisible) {
-          this.visible.emit(target)
-          observer.unobserve(target)
-        }
+      return {
+        unsubscribe () {
+          intersectionObserver.disconnect()
+        },
+      }
+    })
+      .pipe(debounceTime(this.debounceTime))
+      .subscribe(status => {
+        this.isIntersecting.emit(status)
+        this._isIntersecting = status
       })
   }
 }

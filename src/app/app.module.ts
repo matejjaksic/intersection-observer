@@ -10,18 +10,14 @@ import { FlexLayoutModule } from '@angular/flex-layout'
 import { MatButtonModule } from '@angular/material/button'
 import { MatCardModule } from '@angular/material/card'
 
-/* Components */
-import { HeaderComponent } from './components/header/header.component'
+/* Views */
 import { PageComponent } from './views/page/page.component'
+
+/* Directives */
 import { ObserveElementDirective } from './directives/observe-element.directive'
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    HeaderComponent,
-    PageComponent,
-    ObserveElementDirective,
-  ],
+  declarations: [AppComponent, PageComponent, ObserveElementDirective],
   imports: [
     BrowserModule,
     AppRoutingModule,

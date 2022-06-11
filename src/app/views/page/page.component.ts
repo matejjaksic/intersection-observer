@@ -10,7 +10,7 @@ export class PageComponent implements OnInit {
 
   ngOnInit (): void {}
 
-  onVisible (index: number) {
-    console.log('Element #' + index + ' is visible')
+  isIntersecting (status: boolean, index: number) {
+    console.log('Element #' + index + ' is intersecting ' + status)
   }
 }
