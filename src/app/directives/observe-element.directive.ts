@@ -1,5 +1,6 @@
 import {
   Directive,
+  OnInit,
   OnDestroy,
   Input,
   Output,
@@ -12,7 +13,7 @@ import { debounceTime, Observable, Subscription } from 'rxjs'
   selector: '[appObserveElement]',
   exportAs: 'intersection',
 })
-export class ObserveElementDirective implements OnDestroy {
+export class ObserveElementDirective implements OnInit, OnDestroy {
   @Input() root: HTMLElement | null = null
   @Input() rootMargin = '0px 0px 0px 0px'
   @Input() threshold = 0
@@ -24,7 +25,9 @@ export class ObserveElementDirective implements OnDestroy {
   _isIntersecting = false
   subscription: Subscription
 
-  constructor (private element: ElementRef) {
+  constructor (private element: ElementRef) {}
+
+  ngOnInit () {
     this.subscription = this.createAndObserve()
   }
 
